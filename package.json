@@ -9,44 +9,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:consoleLogsView",
-    "onStartupFinished"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
-    "views": {
-      "explorer": [
-        {
-          "icon": "$(terminal)",
-          "id": "consoleLogsView",
-          "name": "List Console Logs",
-          "type": "tree"
-        },
-        {
-          "id": "consoleLogsSearchView",
-          "name": "Search Console Logs",
-          "type": "webview"
-        }
-      ]
-    },
-    "viewsWelcome": [
-      {
-        "view": "consoleLogsView",
-        "contents": "Filter console logs by text"
-      }
-    ],
-    "commands": [
-      {
-        "command": "extension.refreshConsoleLogs",
-        "title": "Refresh Console Logs"
-      },
-      {
-        "command": "extension.searchConsoleLogs",
-        "title": "Search Console Logs",
-        "icon": "$(search)"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -56,13 +21,25 @@
         }
       ]
     },
+    "views": {
+      "console-logs": [
+        {
+          "icon": "$(terminal)",
+          "id": "consoleLogsView",
+          "name": "List Console Logs",
+          "type": "tree"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "extension.refreshConsoleLogs",
+        "title": "Refresh Console Logs",
+        "icon": "$(refresh)"
+      }
+    ],
     "menus": {
       "view/title": [
-        {
-          "command": "extension.searchConsoleLogs",
-          "when": "view == consoleLogsView",
-          "group": "navigation"
-        },
         {
           "command": "extension.refreshConsoleLogs",
           "when": "view == consoleLogsView",

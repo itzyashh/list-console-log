@@ -8,29 +8,17 @@ export function activate(context: vscode.ExtensionContext) {
   const consoleLogProvider = new ConsoleLogTreeProvider();
   
   // Register tree view
-  const treeView = vscode.window.createTreeView('consoleLogsView', {
-    treeDataProvider: consoleLogProvider,
-    showCollapseAll: true
-  });
+  context.subscriptions.push(
+    vscode.window.createTreeView('consoleLogsView', {
+      treeDataProvider: consoleLogProvider,
+      showCollapseAll: true
+    })
+  );
   
   // Register refresh command
   context.subscriptions.push(
     vscode.commands.registerCommand('extension.refreshConsoleLogs', () => {
       consoleLogProvider.refresh();
-    })
-  );
-  
-  // Register search command
-  context.subscriptions.push(
-    vscode.commands.registerCommand('extension.searchConsoleLogs', async () => {
-      const searchText = await vscode.window.showInputBox({
-        placeHolder: 'Search console logs...',
-        prompt: 'Enter text to filter console logs'
-      });
-      
-      if (searchText !== undefined) {
-        consoleLogProvider.setSearchFilter(searchText);
-      }
     })
   );
   
@@ -53,12 +41,6 @@ export function activate(context: vscode.ExtensionContext) {
   
   // Initial refresh
   consoleLogProvider.refresh();
-
-  // Create a webview view provider for the search bar
-  const searchProvider = new ConsoleLogSearchProvider(consoleLogProvider);
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('consoleLogsSearchView', searchProvider)
-  );
 }
 
 class FileNode {
@@ -79,30 +61,25 @@ class LogNode {
 }
 
 class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNode> {
-  private _onDidChangeTreeData = new vscode.EventEmitter<FileNode | LogNode | undefined>();
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<FileNode | LogNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
   
-  private fileMap: Map<string, LogNode[]> = new Map();
-  private searchFilter: string = '';
+  private readonly fileMap: Map<string, LogNode[]> = new Map();
   
   refresh(): void {
     this.fileMap.clear();
     this._onDidChangeTreeData.fire(undefined);
   }
   
-  setSearchFilter(filter: string): void {
-    this.searchFilter = filter.toLowerCase();
-    this._onDidChangeTreeData.fire(undefined);
-  }
-  
   getTreeItem(element: FileNode | LogNode): vscode.TreeItem {
     if (element instanceof FileNode) {
-      // File node with toggle
+      // File node with toggle - change collapsible state based on search
       const item = new vscode.TreeItem(
         element.fileName, 
-        vscode.TreeItemCollapsibleState.Expanded  // Start expanded to show logs
+        vscode.TreeItemCollapsibleState.Expanded  // Always expanded
       );
       item.iconPath = new vscode.ThemeIcon('file-code');
+      
       return item;
     } else {
       // Log node with line/column info
@@ -126,33 +103,24 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
     if (!element) {
       // Root level - scan for files with console.logs
       return this.scanWorkspace().then(() => {
-        // Convert fileMap to array of FileNodes, filtering by search term
+        // Convert fileMap to array of FileNodes
         const fileNodes: FileNode[] = [];
         
         this.fileMap.forEach((logs, filePath) => {
-          // Filter logs based on search text
-          const filteredLogs = this.searchFilter 
-            ? logs.filter(log => log.text.toLowerCase().includes(this.searchFilter))
-            : logs;
-            
-          // Only add files that have matching logs
-          if (filteredLogs.length > 0) {
-            const fileName = path.basename(filePath);
-            fileNodes.push(new FileNode(fileName, filePath));
-          }
+          const fileName = path.basename(filePath);
+          fileNodes.push(new FileNode(fileName, filePath));
         });
         
         // Sort by filename
         return fileNodes.sort((a, b) => a.fileName.localeCompare(b.fileName));
       });
     } else if (element instanceof FileNode) {
-      // File level - return logs for this file, filtered by search term
+      // File level - return logs for this file
       const logs = this.fileMap.get(element.filePath) || [];
-      const filteredLogs = this.searchFilter
-        ? logs.filter(log => log.text.toLowerCase().includes(this.searchFilter))
-        : logs;
       
-      return Promise.resolve(filteredLogs.sort((a, b) => a.line - b.line));
+      // Sort logs by line number and return them
+      const sortedLogs = [...logs].sort((a, b) => a.line - b.line);
+      return Promise.resolve(sortedLogs);
     } else {
       // Log item - no children
       return Promise.resolve([]);
@@ -215,47 +183,5 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
     } catch (error) {
       console.error(`Error processing file ${uri.fsPath}:`, error);
     }
-  }
-}
-
-class ConsoleLogSearchProvider implements vscode.WebviewViewProvider {
-  constructor(private readonly consoleLogProvider: ConsoleLogTreeProvider) {}
-  
-  resolveWebviewView(webviewView: vscode.WebviewView): void {
-    webviewView.webview.options = {
-      enableScripts: true
-    };
-    
-    webviewView.webview.html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { padding: 5px; }
-            input { width: 100%; padding: 4px; }
-          </style>
-        </head>
-        <body>
-          <input type="text" id="searchInput" placeholder="Search console logs...">
-          <script>
-            const vscode = acquireVsCodeApi();
-            const input = document.getElementById('searchInput');
-            
-            input.addEventListener('input', () => {
-              vscode.postMessage({ 
-                type: 'search', 
-                text: input.value 
-              });
-            });
-          </script>
-        </body>
-      </html>
-    `;
-    
-    webviewView.webview.onDidReceiveMessage(message => {
-      if (message.type === 'search') {
-        this.consoleLogProvider.setSearchFilter(message.text);
-      }
-    });
   }
 }
