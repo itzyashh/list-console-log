@@ -11,7 +11,9 @@ This extension adds a dedicated Console Logs view in the Activity Bar, helping y
 - Automatically stay updated as you edit your code
 - Track multiple types of console outputs (log, warn, error, info, debug)
 
-![Console Log Explorer in action](images/screenshot.png)
+![Apr 10 2025 (1)](https://github.com/user-attachments/assets/181c2ec1-2eeb-4bcf-8c01-f59235b47982)
+
+
 
 ## How it works
 
