@@ -2,7 +2,7 @@
   "name": "list-console-log",
   "displayName": "Console Log Explorer",
   "description": "Easily track and navigate console.log statements in your JavaScript and TypeScript files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "itzyashh",
   "license": "MIT",
   "icon": "images/icon.png",
