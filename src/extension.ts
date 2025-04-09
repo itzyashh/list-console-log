@@ -22,25 +22,31 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
   
-  // Auto-refresh on document changes
+  // Track document changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((e) => {
       // Only refresh if the document contains JS/TS code
       if (/\.(js|ts|jsx|tsx)$/.test(e.document.fileName)) {
-        consoleLogProvider.refresh();
+        consoleLogProvider.processDocument(e.document);
       }
     })
   );
   
-  // Auto-refresh when changing files
+  // Track active editor
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(() => {
-      consoleLogProvider.refresh();
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (editor && /\.(js|ts|jsx|tsx)$/.test(editor.document.fileName)) {
+        consoleLogProvider.processDocument(editor.document);
+      }
     })
   );
   
-  // Initial refresh
-  consoleLogProvider.refresh();
+  // Process all currently open documents
+  vscode.workspace.textDocuments.forEach(doc => {
+    if (/\.(js|ts|jsx|tsx)$/.test(doc.fileName)) {
+      consoleLogProvider.processDocument(doc);
+    }
+  });
 }
 
 class FileNode {
@@ -67,18 +73,45 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
   private readonly fileMap: Map<string, LogNode[]> = new Map();
   
   refresh(): void {
-    this.fileMap.clear();
+    // Process all currently open documents on manual refresh
+    vscode.workspace.textDocuments.forEach(doc => {
+      if (/\.(js|ts|jsx|tsx)$/.test(doc.fileName)) {
+        this.processDocument(doc);
+      }
+    });
+    
+    this._onDidChangeTreeData.fire(undefined);
+  }
+  
+  processDocument(document: vscode.TextDocument): void {
+    // Skip non-JS/TS files
+    if (!/\.(js|ts|jsx|tsx)$/.test(document.fileName)) {
+      return;
+    }
+    
+    // Process the document content
+    this.findConsoleLogs(document);
     this._onDidChangeTreeData.fire(undefined);
   }
   
   getTreeItem(element: FileNode | LogNode): vscode.TreeItem {
     if (element instanceof FileNode) {
-      // File node with toggle - change collapsible state based on search
+      // File node
       const item = new vscode.TreeItem(
         element.fileName, 
-        vscode.TreeItemCollapsibleState.Expanded  // Always expanded
+        vscode.TreeItemCollapsibleState.Expanded
       );
       item.iconPath = new vscode.ThemeIcon('file-code');
+      item.description = (this.fileMap.get(element.filePath)?.length || 0).toString();
+      
+      // Apply custom styling for file names - make them bold and white
+      item.label = {
+        label: element.fileName,
+        highlights: []
+      };
+      
+      // Use ThemeColor for consistent theming
+      item.tooltip = element.filePath;
       
       return item;
     } else {
@@ -101,24 +134,23 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
   
   getChildren(element?: FileNode | LogNode): Thenable<(FileNode | LogNode)[]> {
     if (!element) {
-      // Root level - scan for files with console.logs
-      return this.scanWorkspace().then(() => {
-        // Convert fileMap to array of FileNodes
-        const fileNodes: FileNode[] = [];
-        
-        this.fileMap.forEach((logs, filePath) => {
+      // Root level - return files with console logs
+      const fileNodes: FileNode[] = [];
+      
+      this.fileMap.forEach((logs, filePath) => {
+        if (logs.length > 0) {
           const fileName = path.basename(filePath);
           fileNodes.push(new FileNode(fileName, filePath));
-        });
-        
-        // Sort by filename
-        return fileNodes.sort((a, b) => a.fileName.localeCompare(b.fileName));
+        }
       });
+      
+      // Sort by filename
+      return Promise.resolve(fileNodes.sort((a, b) => a.fileName.localeCompare(b.fileName)));
     } else if (element instanceof FileNode) {
       // File level - return logs for this file
       const logs = this.fileMap.get(element.filePath) || [];
       
-      // Sort logs by line number and return them
+      // Sort logs by line number
       const sortedLogs = [...logs].sort((a, b) => a.line - b.line);
       return Promise.resolve(sortedLogs);
     } else {
@@ -127,61 +159,37 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
     }
   }
   
-  private async scanWorkspace(): Promise<void> {
-    // Clear previous data
-    this.fileMap.clear();
+  private findConsoleLogs(document: vscode.TextDocument): void {
+    const text = document.getText();
+    const uri = document.uri;
     
-    try {
-      // Find all JS/TS files in workspace
-      const files = await vscode.workspace.findFiles(
-        '{**/*.js,**/*.ts,**/*.jsx,**/*.tsx}',
-        '**/node_modules/**'
-      );
+    // Regular expression to find console.log statements
+    const pattern = /console\.(log|warn|error|info|debug)\s*\(\s*(['"`].*?['"`]|.*?)\s*\)/g;
+    let match;
+    const logs: LogNode[] = [];
+    
+    while ((match = pattern.exec(text)) !== null) {
+      const method = match[1]; // log, warn, error, etc.
+      const content = match[2] || '';
       
-      // Process each file
-      for (const file of files) {
-        await this.processFile(file);
-      }
+      const logText = `console.${method}(${content})`;
+      const start = document.positionAt(match.index);
       
-      console.log(`Found console.logs in ${this.fileMap.size} files`);
-    } catch (error) {
-      console.error('Error scanning workspace:', error);
+      logs.push(new LogNode(
+        logText,
+        start.line,
+        start.character,
+        uri,
+        start
+      ));
     }
-  }
-  
-  private async processFile(uri: vscode.Uri): Promise<void> {
-    try {
-      const document = await vscode.workspace.openTextDocument(uri);
-      const text = document.getText();
-      
-      // Better regex pattern that handles nested parentheses
-      // This regex is more accurate for finding console.log statements
-      const pattern = /console\.(log|warn|error|info|debug)\s*\(\s*(['"`].*?['"`]|.*?)\s*\)/g;
-      let match;
-      const logs: LogNode[] = [];
-      
-      while ((match = pattern.exec(text)) !== null) {
-        const method = match[1]; // log, warn, error, etc.
-        const content = match[2] || '';
-        
-        const logText = `console.${method}(${content})`;
-        const start = document.positionAt(match.index);
-        
-        logs.push(new LogNode(
-          logText,
-          start.line,
-          start.character,
-          uri,
-          start
-        ));
-      }
-      
-      // Only add files that have console logs
-      if (logs.length > 0) {
-        this.fileMap.set(uri.fsPath, logs);
-      }
-    } catch (error) {
-      console.error(`Error processing file ${uri.fsPath}:`, error);
+    
+    // Update the file map with found logs
+    if (logs.length > 0) {
+      this.fileMap.set(uri.fsPath, logs);
+    } else {
+      // Remove the file from the map if no logs are found
+      this.fileMap.delete(uri.fsPath);
     }
   }
 }
