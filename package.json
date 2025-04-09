@@ -1,0 +1,101 @@
+{
+  "name": "list-console-log",
+  "displayName": "list console.log",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:consoleLogsView",
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "icon": "$(terminal)",
+          "id": "consoleLogsView",
+          "name": "List Console Logs",
+          "type": "tree"
+        },
+        {
+          "id": "consoleLogsSearchView",
+          "name": "Search Console Logs",
+          "type": "webview"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "consoleLogsView",
+        "contents": "Filter console logs by text"
+      }
+    ],
+    "commands": [
+      {
+        "command": "extension.refreshConsoleLogs",
+        "title": "Refresh Console Logs"
+      },
+      {
+        "command": "extension.searchConsoleLogs",
+        "title": "Search Console Logs",
+        "icon": "$(search)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "console-logs",
+          "title": "Console Logs",
+          "icon": "$(terminal)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "extension.searchConsoleLogs",
+          "when": "view == consoleLogsView",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.refreshConsoleLogs",
+          "when": "view == consoleLogsView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run package",
+    "compile": "yarn run check-types && yarn run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "yarn run check-types && yarn run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.99.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "eslint": "^9.23.0",
+    "esbuild": "^0.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.2",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
