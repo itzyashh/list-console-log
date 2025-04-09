@@ -1,71 +1,52 @@
-# list-console-log README
+# Console Log Explorer
 
-This is the README for your extension "list-console-log". After writing up a brief description, we recommend including the following sections.
+Easily track and navigate console.log statements in your JavaScript and TypeScript files.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+This extension adds a dedicated Console Logs view in the Activity Bar, helping you:
 
-For example if there is an image subfolder under your extension project workspace:
+- Quickly see all console.log statements in your open files
+- Navigate directly to any console.log with a single click
+- Automatically stay updated as you edit your code
+- Track multiple types of console outputs (log, warn, error, info, debug)
 
-\!\[feature X\]\(images/feature-x.png\)
+![Console Log Explorer in action](images/screenshot.png)
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## How it works
 
-## Requirements
+The extension scans your currently open JavaScript and TypeScript files for console statements and organizes them in a convenient tree view:
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+1. Files appear as parent nodes with the number of console logs in parentheses
+2. Console logs appear as child nodes with line and column information
+3. Clicking on a console log takes you directly to its location in the file
+
+## Usage
+
+1. Open any JavaScript or TypeScript file
+2. Click the Console Logs icon in the Activity Bar
+3. See all console.log statements in your open files
+4. Click on any log to jump to that location in your code
+5. Use the refresh button to manually update the view
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Currently, there are no configurable settings for this extension.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- The regex pattern might not catch all complex console.log statements
+- Very large files with many console logs may experience slight performance issues
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Initial release
+- Support for JS/TS/JSX/TSX files
+- Auto-refresh on file changes
+- Direct navigation to console log locations
 
 ---
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
 **Enjoy!**

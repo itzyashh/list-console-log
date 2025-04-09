@@ -1,13 +1,26 @@
 {
   "name": "list-console-log",
-  "displayName": "list console.log",
-  "description": "",
+  "displayName": "Console Log Explorer",
+  "description": "Easily track and navigate console.log statements in your JavaScript and TypeScript files",
   "version": "0.0.1",
+  "publisher": "itzyashh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itzyashh/list-console-log.git"
+  },
   "engines": {
     "vscode": "^1.99.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "console.log",
+    "debug",
+    "javascript",
+    "typescript",
+    "explorer"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -26,7 +39,7 @@
         {
           "icon": "$(terminal)",
           "id": "consoleLogsView",
-          "name": "List Console Logs",
+          "name": "Console Logs",
           "type": "tree"
         }
       ]
