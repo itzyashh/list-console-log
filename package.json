@@ -55,6 +55,10 @@
         "command": "extension.deleteConsoleLog",
         "title": "Delete Console Log",
         "icon": "$(trash)"
+      },
+      {
+        "command": "extension.navigateToConsoleLog",
+        "title": "Navigate to Console Log"
       }
     ],
     "menus": {

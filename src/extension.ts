@@ -22,6 +22,33 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
   
+  // Register custom navigate to console log command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('extension.navigateToConsoleLog', async (node: LogNode) => {
+      if (node) {
+        try {
+          const document = await vscode.workspace.openTextDocument(node.uri);
+          const editor = await vscode.window.showTextDocument(document);
+          
+          // Get the line
+          const line = document.lineAt(node.line);
+          
+          // Position at the end of the line 
+          const endOfLine = new vscode.Position(node.line, line.text.length);
+          
+          // Set cursor position at the end of the line
+          editor.selection = new vscode.Selection(endOfLine, endOfLine);
+          editor.revealRange(
+            new vscode.Range(endOfLine, endOfLine),
+            vscode.TextEditorRevealType.InCenter
+          );
+        } catch (error) {
+          vscode.window.showErrorMessage(`Error navigating to console log: ${error}`);
+        }
+      }
+    })
+  );
+  
   // Register delete console log command
   context.subscriptions.push(
     vscode.commands.registerCommand('extension.deleteConsoleLog', async (node: LogNode) => {
@@ -272,10 +299,12 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
         
       const item = new vscode.TreeItem(`${shortText} ${lineCol}`);
       item.iconPath = new vscode.ThemeIcon('debug-console');
+      
+      // Use our custom navigation command instead of vscode.open
       item.command = {
-        command: 'vscode.open',
-        arguments: [element.uri, { selection: new vscode.Range(element.position, element.position) }],
-        title: 'Open File'
+        command: 'extension.navigateToConsoleLog',
+        arguments: [element],
+        title: 'Navigate to Console Log'
       };
       
       // Add context value to enable context menu
@@ -317,7 +346,7 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
     const uri = document.uri;
     
     // Improved regular expression to find console.log statements
-    // This will match the start of console.log statements but not try to match the entire content
+    // This will match the start of console.log statements
     const pattern = /console\.(log|warn|error|info|debug)\s*\(/g;
     let match;
     const logs: LogNode[] = [];
@@ -326,18 +355,50 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
       const method = match[1]; // log, warn, error, etc.
       const startPosition = document.positionAt(match.index);
       
-      // Get the line text for display
+      // Get the content inside the console.log
+      // First find the opening parenthesis position
+      const openParenIndex = text.indexOf('(', match.index);
+      
+      // Initialize variables for tracking nested parentheses
+      let closeParenIndex = -1;
+      let parenCount = 1;
+      
+      // Find the matching closing parenthesis
+      for (let i = openParenIndex + 1; i < text.length; i++) {
+        if (text[i] === '(') {
+          parenCount++;
+        } else if (text[i] === ')') {
+          parenCount--;
+          if (parenCount === 0) {
+            closeParenIndex = i;
+            break;
+          }
+        }
+      }
+      
+      // Extract the content if we found both opening and closing parentheses
+      let content = '';
+      if (openParenIndex !== -1 && closeParenIndex !== -1) {
+        content = text.substring(openParenIndex + 1, closeParenIndex).trim();
+        
+        // If the content is empty, replace with empty parentheses
+        if (content === '') {
+          content = '()';
+        }
+      }
+      
+      // Get the line text for display purpose
       const line = document.lineAt(startPosition.line);
       const lineText = line.text;
       
-      // For content preview, get just the first line or a portion of it
-      const contentPreview = lineText.substring(match.index).trim();
-      const shortPreview = contentPreview.length > 40 
-        ? contentPreview.substring(0, 37) + '...' 
-        : contentPreview;
+      // Create a display text that shows the actual content
+      const displayText = `console.${method}(${content})`;
+      const shortText = displayText.length > 40 
+        ? displayText.substring(0, 37) + '...' 
+        : displayText;
       
       logs.push(new LogNode(
-        `console.${method}(...) ${shortPreview}`,
+        shortText,
         startPosition.line,
         startPosition.character,
         uri,
