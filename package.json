@@ -40,7 +40,7 @@
         {
           "icon": "$(terminal)",
           "id": "consoleLogsView",
-          "name": "Console Logs",
+          "name": "Tree View",
           "type": "tree"
         }
       ]
