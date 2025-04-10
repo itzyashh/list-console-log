@@ -50,6 +50,11 @@
         "command": "extension.refreshConsoleLogs",
         "title": "Refresh Console Logs",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "extension.deleteConsoleLog",
+        "title": "Delete Console Log",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -58,6 +63,13 @@
           "command": "extension.refreshConsoleLogs",
           "when": "view == consoleLogsView",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "extension.deleteConsoleLog",
+          "when": "view == consoleLogsView && viewItem == logNode",
+          "group": "inline"
         }
       ]
     }
