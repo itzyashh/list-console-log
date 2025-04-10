@@ -316,24 +316,32 @@ class ConsoleLogTreeProvider implements vscode.TreeDataProvider<FileNode | LogNo
     const text = document.getText();
     const uri = document.uri;
     
-    // Regular expression to find console.log statements
-    const pattern = /console\.(log|warn|error|info|debug)\s*\(\s*(['"`].*?['"`]|.*?)\s*\)/g;
+    // Improved regular expression to find console.log statements
+    // This will match the start of console.log statements but not try to match the entire content
+    const pattern = /console\.(log|warn|error|info|debug)\s*\(/g;
     let match;
     const logs: LogNode[] = [];
     
     while ((match = pattern.exec(text)) !== null) {
       const method = match[1]; // log, warn, error, etc.
-      const content = match[2] || '';
+      const startPosition = document.positionAt(match.index);
       
-      const logText = `console.${method}(${content})`;
-      const start = document.positionAt(match.index);
+      // Get the line text for display
+      const line = document.lineAt(startPosition.line);
+      const lineText = line.text;
+      
+      // For content preview, get just the first line or a portion of it
+      const contentPreview = lineText.substring(match.index).trim();
+      const shortPreview = contentPreview.length > 40 
+        ? contentPreview.substring(0, 37) + '...' 
+        : contentPreview;
       
       logs.push(new LogNode(
-        logText,
-        start.line,
-        start.character,
+        `console.${method}(...) ${shortPreview}`,
+        startPosition.line,
+        startPosition.character,
         uri,
-        start
+        startPosition
       ));
     }
     

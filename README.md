@@ -11,6 +11,7 @@ This extension adds a dedicated Console Logs view in the Activity Bar, helping y
 - Delete console logs directly from the tree view without editing the file
 - Automatically stay updated as you edit your code
 - Track multiple types of console outputs (log, warn, error, info, debug)
+- Support for complex console logs with objects, arrays, and multi-line statements
 
 ![Apr 10 2025 (1)](https://github.com/user-attachments/assets/181c2ec1-2eeb-4bcf-8c01-f59235b47982)
 
@@ -41,7 +42,6 @@ Currently, there are no configurable settings for this extension.
 
 ## Known Issues
 
-- The regex pattern might not catch all complex console.log statements
 - Very large files with many console logs may experience slight performance issues
 - Multi-line console logs might not be deleted completely in some complex cases
 
@@ -49,6 +49,7 @@ Currently, there are no configurable settings for this extension.
 
 ### 1.1.0
 - Added ability to delete console logs directly from the tree view
+- Improved detection of complex console.log statements with objects and arrays
 
 ### 1.0.0
 - Initial release
